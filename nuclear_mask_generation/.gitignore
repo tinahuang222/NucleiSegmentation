@@ -1,0 +1,8 @@
+# Virtual Environment (view requirements.txt)
+venv
+
+# Cache files
+__pychache__
+
+# MAC OSX files
+.DS_Store
