@@ -11,3 +11,5 @@ On GDRIVE (where the default is \My Drive\:
 Opening the ColorConvole.ipynb file in Gdrive should bring you directly to the Colab interace. Connect and run.
 
 2/11/20 Keane
+
+Aggregate_Features() reads CSV files with 115 columns of features (for each mask in that CSV file) and averages each feature by quadrant, then outputs those 4 averages features to be merged with those from every other mask in every other file.
