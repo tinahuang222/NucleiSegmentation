@@ -2,7 +2,10 @@
 venv
 
 # Cache files
-__pychache__
+__pycache__
 
 # MAC OSX files
 .DS_Store
+
+# Jupyter Checkpoints
+.ipynb_checkpoints
