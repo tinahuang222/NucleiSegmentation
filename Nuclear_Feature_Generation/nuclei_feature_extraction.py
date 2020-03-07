@@ -9,7 +9,6 @@ import statistics
 import cv2 as cv
 import skimage 
 import imageio
-from radiomics import glcm, imageoperations, shape, glrlm, glszm, getTestCase
 from radiomics import featureextractor
 import SimpleITK as sitk
 import warnings
@@ -35,23 +34,20 @@ CONCATERROR = 960
 #this function will reconstruct the mask with size of 512x512 from an array of coordinates [(r,c)]
 #
 def reconstruct_mask (coord, row=512, col = 512):
-	#list of row coordinate, list of col coordinates
-	coord = np.array(coord)
-	rc = coord[:,0]
-	cc = coord[:,1]
+    #list of row coordinate, list of col coordinates
+    coord = np.array(coord)
+    rc = coord[:,0]
+    cc = coord[:,1]
 
-	mask = np.zeros((row,col))
-	mask[rc,cc] = 1
-	np.ma.make_mask(mask)
-	#print("mask being\n ",mask)
-	return mask
+    mask = np.zeros((row,col))
+    mask[rc,cc] = 1
+    np.ma.make_mask(mask)
+    #print("mask being\n ",mask)
+    return mask
 
 #test cases 
 def extract_features_from_mask_helper (img, mk):
-#    image = sitk.ReadImage(imageName)
-#    mask = sitk.ReadImage(maskName)
-#not sure whether this has to be sitk object
-    image =  sitk.GetImageFromArray(img)
+
     try:
         image =  sitk.GetImageFromArray(img)
         mask = sitk.GetImageFromArray(mk)
@@ -59,33 +55,23 @@ def extract_features_from_mask_helper (img, mk):
         #raise SitkError("Failed to convert array into Sitk Object")
         sys.exit(SITKERROR)
     
-    #error in extracting vectors?
     #try:
     extractor = featureextractor.RadiomicsFeatureExtractor(force2D = True) #by default, it's 3d; so we need to change it
     # Enables all feature classes
     extractor.enableAllFeatures()  
-        # Enables all feature classes
-        # Alternative: only first order
-    #extractor.disableAllFeatures  # All features enabled by default
-    #extractor.enableFeatureClassByName('firstorder')
     featureVector = extractor.execute(image, mask)
-    #except:
-    #    sys.exit(EXTRACTERROR)         
-    #for (key,val) in six.iteritems(featureVector):
-    #  print("\t%s: %s" % (key, val))
-    
-    #remove unnecessary parameter settings
-    
+
     keys = list(featureVector.keys())
     for k in keys[:10]:
         del featureVector[k]
     return featureVector
 
-#this function should be able to handle a list of masks coordinates 
-#and append all features onto a csv 
+#extract_features_from_masks should be able to handle a list of masks coordinates 
+#and append all features onto a csv with the same file_name as input in the save_directory
 def extract_features_from_masks (image, maskDir, maskExt, file_name, saveDir):
     
-    #because we changed the format of image into a matrix already, no need to read image from path
+    #because we changed the format of image into a matrix already,
+    #no need to read image from path
     """
     read in normalized_image(gray_scale)
     img_path = os.path.join(imgDir, filename+imageExt)
@@ -150,40 +136,8 @@ def extract_features_from_masks (image, maskDir, maskExt, file_name, saveDir):
         #print("Failed to save file at ", store_file)
         sys.exit(SAVEERROR)
     #append features to csv file 
-    
-    print("Finished extracting features for ", file_name, ". \nTotal time lapsed = ", time.time() - start )
     #print("dim_error: \n", dim_error)
     #print("other_error: \n", other_error)
+    
+    print("Finished extracting features for ", file_name, ". \nTotal time lapsed = ", time.time() - start )
     return (dim_error, other_error)
-
-
-#function to 
-#def 
-
-
-
-
-
-
-''' 
-def get_mask_coordinates_helper (mask):
-    row, col = mask.shape
-    lst = []
-    for i in range(row):
-        for j in range(col):
-            if mask[i][j] == True:
-                lst.append((i,j))
-    return lst
-
-#this will return all the mask coordinates for an .npy file
-#return list of coordinates for list for masks [[mask1][mask2]]
-def get_mask_coordinates (loadfrom_dir, saveto_dir,filename):
-    mask_coord = []
-    all_mask = np.load(os.path.join(loadfrom_dir,filename+'.npy'))
-    saveto_file = os.path.join(saveto_dir,filename+'.csv')
-    #for each mask, generate the coordinate
-    for mask in all_mask:
-        mask_coord.append(get_mask_coordinates_helper(mask))
-    mask_coord= np.array(mask_coord)
-    np.save(saveto_file, mask_coord)   
-'''    
