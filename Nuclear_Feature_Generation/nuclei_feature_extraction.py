@@ -9,6 +9,7 @@ import statistics
 import cv2 as cv
 import skimage 
 import imageio
+from radiomics import glcm, imageoperations, shape, glrlm, glszm, getTestCase
 from radiomics import featureextractor
 import SimpleITK as sitk
 import warnings
@@ -34,20 +35,23 @@ CONCATERROR = 960
 #this function will reconstruct the mask with size of 512x512 from an array of coordinates [(r,c)]
 #
 def reconstruct_mask (coord, row=512, col = 512):
-    #list of row coordinate, list of col coordinates
-    coord = np.array(coord)
-    rc = coord[:,0]
-    cc = coord[:,1]
+	#list of row coordinate, list of col coordinates
+	coord = np.array(coord)
+	rc = coord[:,0]
+	cc = coord[:,1]
 
-    mask = np.zeros((row,col))
-    mask[rc,cc] = 1
-    np.ma.make_mask(mask)
-    #print("mask being\n ",mask)
-    return mask
+	mask = np.zeros((row,col))
+	mask[rc,cc] = 1
+	np.ma.make_mask(mask)
+	#print("mask being\n ",mask)
+	return mask
 
 #test cases 
 def extract_features_from_mask_helper (img, mk):
-
+#    image = sitk.ReadImage(imageName)
+#    mask = sitk.ReadImage(maskName)
+#not sure whether this has to be sitk object
+    image =  sitk.GetImageFromArray(img)
     try:
         image =  sitk.GetImageFromArray(img)
         mask = sitk.GetImageFromArray(mk)
@@ -55,23 +59,33 @@ def extract_features_from_mask_helper (img, mk):
         #raise SitkError("Failed to convert array into Sitk Object")
         sys.exit(SITKERROR)
     
+    #error in extracting vectors?
     #try:
     extractor = featureextractor.RadiomicsFeatureExtractor(force2D = True) #by default, it's 3d; so we need to change it
     # Enables all feature classes
     extractor.enableAllFeatures()  
+        # Enables all feature classes
+        # Alternative: only first order
+    #extractor.disableAllFeatures  # All features enabled by default
+    #extractor.enableFeatureClassByName('firstorder')
     featureVector = extractor.execute(image, mask)
-
+    #except:
+    #    sys.exit(EXTRACTERROR)         
+    #for (key,val) in six.iteritems(featureVector):
+    #  print("\t%s: %s" % (key, val))
+    
+    #remove unnecessary parameter settings
+    
     keys = list(featureVector.keys())
     for k in keys[:10]:
         del featureVector[k]
     return featureVector
 
-#extract_features_from_masks should be able to handle a list of masks coordinates 
-#and append all features onto a csv with the same file_name as input in the save_directory
+#this function should be able to handle a list of masks coordinates 
+#and append all features onto a csv 
 def extract_features_from_masks (image, maskDir, maskExt, file_name, saveDir):
     
-    #because we changed the format of image into a matrix already,
-    #no need to read image from path
+    #because we changed the format of image into a matrix already, no need to read image from path
     """
     read in normalized_image(gray_scale)
     img_path = os.path.join(imgDir, filename+imageExt)
@@ -136,8 +150,8 @@ def extract_features_from_masks (image, maskDir, maskExt, file_name, saveDir):
         #print("Failed to save file at ", store_file)
         sys.exit(SAVEERROR)
     #append features to csv file 
-    #print("dim_error: \n", dim_error)
-    #print("other_error: \n", other_error)
     
     print("Finished extracting features for ", file_name, ". \nTotal time lapsed = ", time.time() - start )
+    #print("dim_error: \n", dim_error)
+    #print("other_error: \n", other_error)
     return (dim_error, other_error)
