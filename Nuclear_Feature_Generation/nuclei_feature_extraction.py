@@ -155,35 +155,3 @@ def extract_features_from_masks (image, maskDir, maskExt, file_name, saveDir):
     #print("dim_error: \n", dim_error)
     #print("other_error: \n", other_error)
     return (dim_error, other_error)
-
-
-#function to 
-#def 
-
-
-
-
-
-
-''' 
-def get_mask_coordinates_helper (mask):
-    row, col = mask.shape
-    lst = []
-    for i in range(row):
-        for j in range(col):
-            if mask[i][j] == True:
-                lst.append((i,j))
-    return lst
-
-#this will return all the mask coordinates for an .npy file
-#return list of coordinates for list for masks [[mask1][mask2]]
-def get_mask_coordinates (loadfrom_dir, saveto_dir,filename):
-    mask_coord = []
-    all_mask = np.load(os.path.join(loadfrom_dir,filename+'.npy'))
-    saveto_file = os.path.join(saveto_dir,filename+'.csv')
-    #for each mask, generate the coordinate
-    for mask in all_mask:
-        mask_coord.append(get_mask_coordinates_helper(mask))
-    mask_coord= np.array(mask_coord)
-    np.save(saveto_file, mask_coord)   
-'''    
