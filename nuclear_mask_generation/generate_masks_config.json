@@ -1,0 +1,7 @@
+
+{
+  "weights_path" : "/Users/akre96/Data/BE_223B/mask_rcnn_weights.h5",
+  "tile_folder" : "/Users/akre96/Data/BE_223B/tiles_rois/normalized/",
+  "masks_out_folder" : "/Users/akre96/Data/BE_223B/tiles_rois/masks/",
+  "device" : "/cpu:0"
+}
