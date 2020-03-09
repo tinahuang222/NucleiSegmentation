@@ -1,3 +1,10 @@
+""" Generate and save masks from tile input folder.
+Edit configuration file to run on your own device,
+example file is 'generate_masks_config.json',
+
+For python environment view 'requirements.txt'
+
+"""
 import os
 import argparse
 import numpy as np
@@ -103,6 +110,10 @@ def main(config_path: str) -> None:
     tile_folder = config['tile_folder']
     masks_out_folder = config['masks_out_folder']
     weights_path = config['weights_path']
+
+    if not os.path.isdir(masks_out_folder):
+        print('Creating mask output directory:', masks_out_folder)
+        os.mkdir(masks_out_folder)
 
     # Load MaskRCNN Model
     model = config_model(weights_path, config['device'])
