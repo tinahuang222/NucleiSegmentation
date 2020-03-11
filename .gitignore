@@ -7,3 +7,7 @@ venv
 
 # python notebook checkpoints
 .ipynb_checkpoints
+
+
+# Cache Files
+__pycache__

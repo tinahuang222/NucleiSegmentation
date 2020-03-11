@@ -4,6 +4,7 @@ example file is 'generate_masks_config.json',
 
 For python environment view 'requirements.txt'
 
+Author: Samir Akre
 """
 import os
 import argparse
