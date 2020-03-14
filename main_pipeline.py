@@ -7,6 +7,19 @@ this should output masks_dir, masks coordinates for all tiles
 2. color deconvolve from PREPROCESSING (Keane)
 this should output pickle file 
 """
+#input_image_dir is the full path to the raw TILE images (should all be in one folder, as it will
+#   just get a listing of files in that folder
+#output_image_dir is where the pickle file will be written out (used to contain debug images, but
+#   those are not in this pared down version)
+deconvolved_image_h, deconvolved_image_e,image_names = ColorDeconv(input_image_dir,output_image_dir)
+#writes a pickle file with the returned items above into output_image_dir. The pickle filename
+#   is 'HE_IMAGES_PICKLE.pck'
+#   if the return values are not needed, remove them
+#--deconvolved_image_h is an array containing the 512x512x1 Haema images
+#--deconvolved_image_e is an array containing the 512x512x1 Eosin images
+#--image_names is a dictionary of the original image names. The order of names here correspond
+#    to the order in the h and e arrays (for cancer labeling purposes)
+
 
 
 
