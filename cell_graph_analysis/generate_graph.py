@@ -174,4 +174,4 @@ def select_node_feature_columns(
         and (col != 'diagnostics_Mask-original_VolumeNum')
     ]
     nuc_feat = nuc_feat[nuc_feat.base_feat.isin(variable_cols)]
-    return nuc_feat.base_feat.tolist()[:n]
+    return nuc_feat.base_feat.drop_duplicates().tolist()[:n]
