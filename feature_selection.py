@@ -37,6 +37,7 @@ print('Save feature ranking to', mix_feature_ranking_path)
 Feature selection for cell feature using logistic regression
 Author:Tina
 """
+data_path = Path('./data')
 aggr_path = data_path / 'cell_feature' / 'cell_features_aggr.csv'
 save_dir = data_path / 'cell_feature'
 fs.get_logreg_coef(aggr_path, label_path, save_dir)
