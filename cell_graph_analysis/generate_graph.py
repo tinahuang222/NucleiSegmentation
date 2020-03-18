@@ -19,7 +19,7 @@ def create_data_set(
     n_features: int = 64,
     max_neighbours: int = 8,
     radius: float = 50
-) -> List[Data]:
+) -> (List[Data], List[str]):
     """ Creates data set for input to model
 
     Arguments:
@@ -40,6 +40,7 @@ def create_data_set(
 
     Returns:
         List[Data] -- List pytorch input graphs, 1 item per tile
+        List[str] -- Columns used as feature inputs to nodes
     """
     data_sets = []
     labels = pd.read_csv(tile_label_file_path)
@@ -68,7 +69,7 @@ def create_data_set(
         )
         data_sets.append(data)
 
-    return data_sets
+    return data_sets, feature_cols
 
 
 def gen_graph(
@@ -174,4 +175,5 @@ def select_node_feature_columns(
         and (col != 'diagnostics_Mask-original_VolumeNum')
     ]
     nuc_feat = nuc_feat[nuc_feat.base_feat.isin(variable_cols)]
-    return nuc_feat.base_feat.drop_duplicates().tolist()[:n]
+    nuc_feat = nuc_feat.sort_values(by='abs_coef', ascending=False)
+    return nuc_feat.base_feat.tolist()[:n]
