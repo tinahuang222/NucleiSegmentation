@@ -87,6 +87,7 @@ The result feature will be save in:
 `python generate_advance_feature.py --test=False` (if True will generate feature in test folder instead)
 
 The result feature will be save in:
+
     A. Cell feature: data/(train/test)/cell_feature/hema
     B. Histogram aggregation of cell feature: data/(train/test)/cell_feature/cell_features_aggr.csv
     C. Furthest point sampling graph feature: data/(train/test)/graph_feature/graph_feature.csv
@@ -109,6 +110,7 @@ The trained models will be save in:
     C. There is no save model for weight_avg_classifier as it just avg the 2 above with ratio 0.82, 0.18
     
 `python eval.py`
+
 The prediction results will be save in:
 
     A. Random forest classifier: data/results/rf_results.csv
