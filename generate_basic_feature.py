@@ -6,11 +6,22 @@ import os
 from tqdm import tqdm
 import h5py
 
+import argparse
+
+parser = argparse.ArgumentParser(description='Process train or test data.')
+parser.add_argument('--test', dest='test', default=False,
+                   help='processing test data (False by default)')
+
+args = parser.parse_args()
+if args.test:
+    data_path = Path('.') / 'data' / 'test'
+else:
+    data_path = Path('.') / 'data' / 'train'
+
 """
 Generate HE image
 Author:Samir
 """
-data_path = Path('./data')
 tiles_path = data_path / 'tiles_rois' / 'original'
 model_weight_path = str(Path('./mask_rcnn_weights.h5').resolve())
 
@@ -31,7 +42,6 @@ for i in tqdm(range(len(file_names))):
 Generate HE image
 Author:Keane
 """
-data_path = Path('./data')
 img_arr_dir = data_path / 'img_arr'
 file_names = os.listdir(tiles_path)
 os.makedirs(img_arr_dir, exist_ok=True)
@@ -47,7 +57,6 @@ with h5py.File(img_arr_dir / 'img_arr.h5', 'w') as file:
 Generate Centroids
 Author:Samir
 """
-data_path = Path('./data')
 mask_dir = data_path / 'mask'
 centroid_dir = data_path / 'centroid'
 os.makedirs(centroid_dir, exist_ok=True)

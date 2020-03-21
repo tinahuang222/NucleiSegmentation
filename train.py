@@ -3,15 +3,27 @@ import os
 import pickle
 from finalized_code import classification as clf
 import pandas as pd
+
+import argparse
+
+parser = argparse.ArgumentParser(description='Process train or test data.')
+parser.add_argument('--test', dest='test', default=False,
+                   help='processing test data (False by default)')
+
+args = parser.parse_args()
+if args.test:
+    data_path = Path('.') / 'data' / 'test'
+else:
+    data_path = Path('.') / 'data' / 'train'
+
 """
 Train random forest classifier
 Author:Minh
 """
-data_path = Path('./data')
-mix_feature_ranking_path = data_path / 'graph_feature' /  'mix_feature_ranking.csv'
+mix_feature_ranking_path = data_path / 'graph_feature' / 'mix_feature_ranking.csv'
 mix_feature_path = data_path / 'graph_feature'/ 'mix_feature.csv'
 
-model_dir = data_path / 'models'
+model_dir = Path('./data') / 'models' / 'rf'
 os.makedirs(model_dir, exist_ok=True)
 save_path = model_dir / 'rf.pkl'
 
@@ -23,10 +35,9 @@ pickle.dump(rf, open(save_path, 'wb'))
 Train graph convolution classifier
 Author:Samir
 """
-data_path = Path('./data')
 graph_dir = data_path / 'graph_feature'
-model_path = data_path / 'models' / 'graph_conv'
-os.makedirs(model_path, exist_ok=True)
+model_dir = Path('./data') / 'models' / 'graph_conv'
+os.makedirs(model_dir, exist_ok=True)
 
 node_feature_dir = data_path / 'masks_features'
 tile_label_path = data_path / 'tiles_rois' / 'dataset.csv'
@@ -38,4 +49,4 @@ with open(graph_dir / 'graph_data.pkl', 'wb') as fp:
 
 dataset = pickle.load(open(graph_dir / 'graph_data.pkl', 'rb'))
 
-model= clf.train_graph_conv(dataset, save_path=model_path / 'graph_conv.pth')
+model= clf.train_graph_conv(dataset, save_path= model_dir/ 'graph_conv.pth')

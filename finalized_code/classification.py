@@ -52,7 +52,8 @@ def train_rf_model(feature_df, feature_ranking_path, top_feature=15):
 def predict_from_model(model, feature_df, feature_ranking_path, top_feature=15):
     X = prepare_data(feature_df, feature_ranking_path, top_feature)
     y_pred = model.predict(X)
-    return y_pred
+    tile_id = feature_df.index.values
+    return [y_pred, tile_id]
 
 # k_fold test
 def k_fold_test(feature_df, feature_ranking_path, fold=10, top_feature=15):
@@ -99,10 +100,11 @@ def create_data_set(
     node_feature_folder: str,
     tile_label_file_path: str,
     regression_coefficient_file: str,
+    train=True,
     n_features: int = 64,
     max_neighbours: int = 8,
     radius: float = 50
-) -> List[Data]:
+) -> (List[Data], List[str]):
     """ Creates data set for input to model
     Arguments:
         node_feature_folder {str} -- Path to folder containing csv's of
@@ -129,7 +131,10 @@ def create_data_set(
 
     for feature_file_path in tqdm(feature_files):
         tile_id = feature_file_path.split('/')[-1].split('.')[0]
-        label = labels[labels.tile_name == tile_id].label.values[0]
+        if train:
+            label = labels[labels.tile_name == tile_id].label.values[0]
+        else:
+            label = -1
 
         feature_path = node_feature_folder / feature_file_path
         if feature_cols is None:
@@ -146,7 +151,7 @@ def create_data_set(
             max_neighbours,
             radius,
         )
-        data_sets.append(data)
+        data_sets.append([data, tile_id])
 
     return data_sets
 
@@ -249,7 +254,9 @@ def select_node_feature_columns(
         and (col != 'diagnostics_Mask-original_VolumeNum')
     ]
     nuc_feat = nuc_feat[nuc_feat.base_feat.isin(variable_cols)]
-    return nuc_feat.base_feat.drop_duplicates().tolist()[:n]
+    nuc_feat = nuc_feat.sort_values(by='abs_coef', ascending=False)
+
+    return nuc_feat.base_feat.tolist()[:n]
 
 class Net(torch.nn.Module):
     def __init__(self, in_feats):
@@ -292,8 +299,9 @@ class Net(torch.nn.Module):
         return F.softmax(x, dim=1)
 
 # train
-def train_graph_conv(dataset, save_path=None, epochs=500, batch_size=128, lr=0.0001, weight_decay=5e-4,
+def train_graph_conv(dataset, save_path=None, epochs=50, batch_size=8, lr=0.0001, weight_decay=5e-4,
                      top_feature=64, device_type='cuda'):
+    dataset = [x[0] for x in dataset]
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=False)
     device = torch.device(device_type)
 
@@ -302,7 +310,7 @@ def train_graph_conv(dataset, save_path=None, epochs=500, batch_size=128, lr=0.0
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     model.train()
 
-    for epoch in tqdm(range(epochs), desc='epochs'):
+    for epoch in tqdm(range(epochs), desc='epochs', leave=False):
         for batch in train_loader:
             data = batch.to(device)
             optimizer.zero_grad()
@@ -319,7 +327,10 @@ def train_graph_conv(dataset, save_path=None, epochs=500, batch_size=128, lr=0.0
     return model
 
 # predict
-def predict_graph_conv(dataset, model=None, model_path=None, top_feature=64, batch_size=1, device_type='cuda'):
+def predict_graph_conv(dataset_with_tile_name, model=None, model_path=None, top_feature=64, batch_size=1,
+                       device_type='cuda'):
+    dataset = [x[0] for x in dataset_with_tile_name]
+    tile_name = [x[1] for x in dataset_with_tile_name]
     test_loader = DataLoader(dataset, batch_size=batch_size, pin_memory=False)
     device = torch.device(device_type)
 
@@ -327,31 +338,33 @@ def predict_graph_conv(dataset, model=None, model_path=None, top_feature=64, bat
         model = Net(top_feature).to(device)
         model.load_state_dict(torch.load(model_path))
     model.eval()
-    result = []
+    results = []
+    index = 0
     for data in test_loader:
         data = data.to(device)
-        result.append(model(data)[0][1].item())
+        results.append([model(data)[0][1].item(), tile_name[index]])
+        index += 1
 
-    return result
+    return results
 
 # k_fold_test
 def k_fold_test_graph_conv(dataset, fold=10, epochs=500, batch_size=128, lr=0.0001, weight_decay=5e-4,
                            top_feature=64, device_type='cuda'):
-    labels = [x.y.item() for x in dataset]
+    labels = [x[0].y.item() for x in dataset]
     y_pred = []
     y_true = []
 
     skf = StratifiedKFold(n_splits=fold, random_state=None, shuffle=True)
 
-    for train_index, test_index in tqdm(skf.split(dataset, labels), total=fold):
+    for train_index, test_index in tqdm(skf.split(dataset, labels), total=fold, leave=False):
         X_train = [dataset[i] for i in train_index]
         X_test = [dataset[i] for i in test_index]
 
-        y_test = [x.y.item() for x in X_test]
+        y_test = [x[0].y.item() for x in X_test]
 
         model = train_graph_conv(X_train, None, epochs, batch_size, lr, weight_decay,
                                  top_feature, device_type)
-        result = predict_graph_conv(X_test, model=model)
+        result = [x[0] for x in predict_graph_conv(X_test, model=model)]
 
         y_pred += result
         y_true += y_test
@@ -362,7 +375,136 @@ def k_fold_test_graph_conv(dataset, fold=10, epochs=500, batch_size=128, lr=0.00
 
     fpr, tpr, _ = roc_curve(y_true, y_pred)
     print('Auc:', auc(fpr, tpr))
-    plt.plot(fpr, tpr, label='RF')
+    plt.plot(fpr, tpr)
+    plt.xlabel('FPR')
+    plt.ylabel('TPR')
     plt.plot([0, 1], [0, 1], color='r', linestyle='--')
     plt.show()
     plt.clf()
+
+"""
+Weight average classifier
+Author:Minh
+"""
+from operator import itemgetter
+
+
+def prepare_data_average(feature_df, feature_ranking_path, dataset, top_feature=64):
+    sort_dataset = sorted(dataset, key=itemgetter(1))
+    sort_df = feature_df.sort_index()
+
+    X_rf = prepare_data(sort_df, feature_ranking_path, top_feature)
+    y_rf = sort_df['label'].values
+    X_gcn = sort_dataset
+    y_gcn = [x[0].y.item() for x in sort_dataset]
+
+    return X_rf, y_rf, X_gcn, y_gcn
+
+
+def k_fold_test_weight_search(feature_df, feature_ranking_path, dataset, fold=10,
+                           epochs=50, batch_size=8, lr=0.0001, weight_decay=5e-4,
+                           top_feature=64, device_type='cuda'):
+    X_rf, y_rf, X_gcn, y_gcn = prepare_data_average(feature_df, feature_ranking_path, dataset, top_feature)
+
+    y_rf_pred = []
+    y_gcn_pred = []
+    y_true = []
+
+    skf = StratifiedKFold(n_splits=fold, random_state=None, shuffle=True)
+
+    for train_index, test_index in tqdm(skf.split(X_rf, y_rf), total=fold, leave=False):
+        X_gcn_train = [X_gcn[i] for i in train_index]
+        X_gcn_test = [X_gcn[i] for i in test_index]
+
+        X_rf_train = X_rf[train_index]
+        X_rf_test = X_rf[test_index]
+
+        y_train = y_rf[train_index]
+        y_test = y_rf[test_index]
+
+        rf_model = RandomForestRegressor(n_estimators=200,
+                                         max_depth=50,
+                                         min_samples_leaf=4,
+                                         min_samples_split=4,
+                                         bootstrap=True,
+                                         max_features=6)
+        rf_model.fit(X_rf_train, y_train)
+
+        gcn_model = train_graph_conv(X_gcn_train, None, epochs, batch_size, lr, weight_decay,
+                                     top_feature, device_type)
+
+        rf_result = rf_model.predict(X_rf_test)
+        gcn_result = [x[0] for x in predict_graph_conv(X_gcn_test, model=gcn_model)]
+
+        y_rf_pred += rf_result.tolist()
+        y_gcn_pred += gcn_result
+        y_true += y_test.tolist()
+
+    y_true = np.array(y_true)
+    y_rf_pred = np.array(y_rf_pred)
+    y_gcn_pred = np.array(y_gcn_pred)
+
+    target_names = ['no_cancer', 'cancer']
+
+    rf_weight = np.arange(0.0, 1.01, 0.01)
+    gcn_weight = 1 - rf_weight
+    auc_results = []
+    for i in range(len(rf_weight)):
+        y_pred_temp = y_rf_pred * rf_weight[i] + y_gcn_pred * gcn_weight[i]
+        fpr, tpr, _ = roc_curve(y_true, y_pred_temp)
+        auc_results.append(auc(fpr, tpr))
+    auc_results = np.array(auc_results)
+    return rf_weight, gcn_weight, auc_results
+
+
+def k_fold_test_weight_avg(feature_df, feature_ranking_path, dataset, weights, fold=10,
+                            epochs=50, batch_size=128, lr=0.0001, weight_decay=5e-4,
+                            top_feature=64, device_type='cuda'):
+    X_rf, y_rf, X_gcn, y_gcn = prepare_data_average(feature_df, feature_ranking_path, dataset, top_feature)
+
+    y_rf_pred = []
+    y_gcn_pred = []
+    y_true = []
+    y_pred = []
+    skf = StratifiedKFold(n_splits=fold, random_state=None, shuffle=True)
+
+    for train_index, test_index in tqdm(skf.split(X_rf, y_rf), total=fold, leave=False):
+        X_gcn_train = [X_gcn[i] for i in train_index]
+        X_gcn_test = [X_gcn[i] for i in test_index]
+
+        X_rf_train = X_rf[train_index]
+        X_rf_test = X_rf[test_index]
+
+        y_train = y_rf[train_index]
+        y_test = y_rf[test_index]
+
+        rf_model = RandomForestRegressor(n_estimators=200,
+                                         max_depth=50,
+                                         min_samples_leaf=4,
+                                         min_samples_split=4,
+                                         bootstrap=True,
+                                         max_features=6)
+        rf_model.fit(X_rf_train, y_train)
+
+        gcn_model = train_graph_conv(X_gcn_train, None, epochs, batch_size, lr, weight_decay,
+                                     top_feature, device_type)
+
+        rf_result = rf_model.predict(X_rf_test)
+        gcn_result = [x[0] for x in predict_graph_conv(X_gcn_test, model=gcn_model)]
+
+        y_rf_pred += rf_result.tolist()
+        y_gcn_pred += gcn_result
+        y_true += y_test.tolist()
+
+    y_pred += (weights[0] * np.array(y_rf_pred) + weights[1] * np.array(y_gcn_pred)).tolist()
+    y_true = np.array(y_true).astype(float)
+    y_pred = np.array(y_pred).astype(float)
+
+    fpr, tpr, _ = roc_curve(y_true, y_pred)
+    print('Auc:', auc(fpr, tpr))
+    plt.plot(fpr, tpr)
+    plt.xlabel('FPR')
+    plt.ylabel('TPR')
+    plt.plot([0, 1], [0, 1], color='r', linestyle='--')
+    plt.show()
+

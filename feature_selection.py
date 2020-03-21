@@ -7,7 +7,7 @@ Feature selection for both graph feature and cell feature
 using random forest
 Author:Minh
 """
-data_path = Path('./data')
+data_path = Path('./data') / 'train'
 cellgraph_feature_path = data_path / 'graph_feature' / 'graph_feature.csv'
 aggr_cell_feature_path = data_path / 'cell_feature'/ 'cell_features_aggr.csv'
 label_path = data_path / 'tiles_rois' / 'dataset.csv'
@@ -37,7 +37,6 @@ print('Save feature ranking to', mix_feature_ranking_path)
 Feature selection for cell feature using logistic regression
 Author:Tina
 """
-data_path = Path('./data')
 aggr_path = data_path / 'cell_feature' / 'cell_features_aggr.csv'
 save_dir = data_path / 'cell_feature'
 fs.get_logreg_coef(aggr_path, label_path, save_dir)
