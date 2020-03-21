@@ -45,8 +45,9 @@
 ### Package setup
 
 1. Install package in the requirements.txt
-2. Install pytorch follow this link: https://pytorch.org/get-started/locally/
-3. Install pyradiomics
+2. Install Nvidia cuda 10.1
+3. Install pytorch follow this link: https://pytorch.org/get-started/locally/
+4. Install pyradiomics
     Follow the instruction here: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
     Downgrade torch-cluster to torch-cluster=1.4.5
 
