@@ -44,7 +44,7 @@
 ```
 ### Package setup
 
-1. Install package in the requirements.tx
+1. Install package in the requirements.txt
 2. Install pytorch follow this link: https://pytorch.org/get-started/locally/
 3. Install pyradiomics
     Follow the instruction here: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
