@@ -39,7 +39,7 @@ matplotlib==3.2.0
 msgpack==1.0.0
 networkx==2.4
 nimfa==1.4.0
-numpy==1.18.1
+numpy==1.22.0
 oauthlib==3.1.0
 opencv-python==4.2.0.32
 openslide-python==1.1.1
